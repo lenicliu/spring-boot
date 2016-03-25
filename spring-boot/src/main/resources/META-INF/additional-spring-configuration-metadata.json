@@ -39,7 +39,7 @@
   {
     "name": "logging.file",
     "type": "java.lang.String",
-    "description": "Log file name.",
+    "description": "Name of the log file. Names can be an exact location or relative to the current directory.",
     "sourceType": "org.springframework.boot.logging.LoggingApplicationListener"
   },
   {
@@ -69,7 +69,7 @@
   {
     "name": "logging.path",
     "type": "java.lang.String",
-    "description": "Location of the log file.",
+    "description": "Directory where log files are written.",
     "sourceType": "org.springframework.boot.logging.LoggingApplicationListener"
   },
   {
@@ -97,6 +97,13 @@
     "description": "Application index."
   },
   {
+    "name": "spring.beaninfo.ignore",
+    "type": "java.lang.Boolean",
+    "sourceType": "org.springframework.boot.context.config.ConfigFileApplicationListener",
+    "description": "Skip search of BeanInfo classes.",
+    "defaultValue": true
+  },
+  {
     "name": "spring.config.name",
     "type": "java.lang.String",
     "sourceType": "org.springframework.boot.context.config.ConfigFileApplicationListener",
@@ -114,7 +121,7 @@
     "type": "org.springframework.boot.Banner$Mode",
     "sourceType": "org.springframework.boot.SpringApplication",
     "description": "Mode used to display the banner when the application runs.",
-    "defaultValue": "console",
+    "defaultValue": "console"
   },
   {
     "name": "spring.main.show-banner",
@@ -153,6 +160,13 @@
     "type": "java.lang.String",
     "sourceType": "org.springframework.boot.context.config.ConfigFileApplicationListener",
     "description": "Unconditionally activate the specified comma separated profiles."
+  },
+  {
+    "name": "trace",
+    "type": "java.lang.Boolean",
+    "description": "Enable trace logs.",
+    "sourceType": "org.springframework.boot.logging.LoggingApplicationListener",
+    "defaultValue": false
   }
 ],"hints": [
   {

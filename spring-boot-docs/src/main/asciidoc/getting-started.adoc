@@ -37,7 +37,7 @@ diverge from the defaults.
 [[getting-started-system-requirements]]
 == System Requirements
 By default, Spring Boot {spring-boot-version} requires http://www.java.com[Java 7] and
-Spring Framework 4.1.5 or above. You can use Spring Boot with Java 6 with some additional
+Spring Framework {spring-version} or above. You can use Spring Boot with Java 6 with some additional
 configuration. See <<howto.adoc#howto-use-java-6>> for more details. Explicit build support
 is provided for Maven (3.2+) and Gradle (1.12+).
 
@@ -445,8 +445,17 @@ Let's develop a simple "`Hello World!`" web application in Java that highlights 
 of Spring Boot's key features. We'll use Maven to build this project since most IDEs
 support it.
 
-TIP: The http://spring.io[spring.io] web site contains many "`Getting Started`" guides
+[TIP]
+====
+The http://spring.io[spring.io] web site contains many "`Getting Started`" guides
 that use Spring Boot. If you're looking to solve a specific problem; check there first.
+
+You can shortcut the steps below by going to https://start.spring.io and choosing the
+`web` starter from the dependencies searcher. This will automatically generate a new
+project structure so that you can <<getting-started-first-application-code,start coding
+right the way>>. Check the https://github.com/spring-io/initializr[documentation for
+more details].
+====
 
 Before we begin, open a terminal to check that you have valid versions of Java and Maven
 installed.
@@ -539,7 +548,7 @@ Spring Boot provides a number of "`Starter POMs`" that make easy to add jars to 
 classpath. Our sample application has already used `spring-boot-starter-parent` in the
 `parent` section of the POM. The `spring-boot-starter-parent` is a special starter
 that provides useful Maven defaults. It also provides a
-<<using-spring-boot.adoc#using-boot-dependency-management,`dependency-management`,>>
+<<using-spring-boot.adoc#using-boot-dependency-management,`dependency-management`>>
 section so that you can omit `version` tags for "`blessed`" dependencies.
 
 Other "`Starter POMs`" simply provide dependencies that you are likely to need when

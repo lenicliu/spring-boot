@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2015 the original author or authors.
+ * Copyright 2012-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -169,13 +169,25 @@ public class ResourceProperties implements ResourceLoaderAware {
 		 */
 		private boolean htmlApplicationCache = false;
 
+		/**
+		 * Enable resolution of already gzipped resources. Checks for a resource name
+		 * variant with the {@code *.gz} extension.
+		 */
+		private boolean gzipped = false;
+
 		@NestedConfigurationProperty
 		private final Strategy strategy = new Strategy();
 
+		/**
+		 * Return whether the resource chain is enabled. Return {@code null} if no
+		 * specific settings are present.
+		 * @return whether the resource chain is enabled or {@code null} if no specified
+		 * settings are present.
+		 */
 		public Boolean getEnabled() {
-			return Boolean.TRUE.equals(this.enabled)
-					|| getStrategy().getFixed().isEnabled()
+			Boolean strategyEnabled = getStrategy().getFixed().isEnabled()
 					|| getStrategy().getContent().isEnabled();
+			return (strategyEnabled ? Boolean.TRUE : this.enabled);
 		}
 
 		public void setEnabled(boolean enabled) {
@@ -200,6 +212,14 @@ public class ResourceProperties implements ResourceLoaderAware {
 
 		public void setHtmlApplicationCache(boolean htmlApplicationCache) {
 			this.htmlApplicationCache = htmlApplicationCache;
+		}
+
+		public boolean isGzipped() {
+			return this.gzipped;
+		}
+
+		public void setGzipped(boolean gzipped) {
+			this.gzipped = gzipped;
 		}
 
 	}

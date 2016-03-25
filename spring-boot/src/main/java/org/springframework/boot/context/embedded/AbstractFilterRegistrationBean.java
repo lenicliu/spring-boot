@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2015 the original author or authors.
+ * Copyright 2012-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -235,7 +235,7 @@ abstract class AbstractFilterRegistrationBean extends RegistrationBean {
 	 * Return the {@link Filter} to be registered.
 	 * @return the filter
 	 */
-	protected abstract Filter getFilter();
+	public abstract Filter getFilter();
 
 	/**
 	 * Configure registration settings. Subclasses can override this method to perform
@@ -261,13 +261,13 @@ abstract class AbstractFilterRegistrationBean extends RegistrationBean {
 					DEFAULT_URL_MAPPINGS);
 		}
 		else {
-			if (servletNames.size() > 0) {
+			if (!servletNames.isEmpty()) {
 				this.logger.info("Mapping filter: '" + registration.getName()
 						+ "' to servlets: " + servletNames);
 				registration.addMappingForServletNames(dispatcherTypes, this.matchAfter,
 						servletNames.toArray(new String[servletNames.size()]));
 			}
-			if (this.urlPatterns.size() > 0) {
+			if (!this.urlPatterns.isEmpty()) {
 				this.logger.info("Mapping filter: '" + registration.getName()
 						+ "' to urls: " + this.urlPatterns);
 				registration.addMappingForUrlPatterns(dispatcherTypes, this.matchAfter,

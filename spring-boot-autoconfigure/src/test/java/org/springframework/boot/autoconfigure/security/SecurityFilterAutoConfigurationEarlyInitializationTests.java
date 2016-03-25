@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2015 the original author or authors.
+ * Copyright 2012-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,8 +36,8 @@ import org.springframework.boot.autoconfigure.web.ServerPropertiesAutoConfigurat
 import org.springframework.boot.autoconfigure.web.WebMvcAutoConfiguration;
 import org.springframework.boot.context.embedded.AnnotationConfigEmbeddedWebApplicationContext;
 import org.springframework.boot.context.embedded.tomcat.TomcatEmbeddedServletContainerFactory;
-import org.springframework.boot.test.EnvironmentTestUtils;
-import org.springframework.boot.test.TestRestTemplate;
+import org.springframework.boot.test.util.EnvironmentTestUtils;
+import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
@@ -114,7 +114,6 @@ public class SecurityFilterAutoConfigurationEarlyInitializationTests {
 
 		private static final long serialVersionUID = 1L;
 
-		@Autowired
 		public JacksonModuleBean(DeserializerBean myDeser) {
 			addDeserializer(SourceType.class, myDeser);
 		}

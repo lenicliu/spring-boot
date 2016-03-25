@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2015 the original author or authors.
+ * Copyright 2012-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,14 +27,20 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.AbstractConnector;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.ForwardedRequestCustomizer;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -84,6 +90,7 @@ import org.springframework.util.StringUtils;
  * @author Dave Syer
  * @author Andrey Hihlovskiy
  * @author Andy Wilkinson
+ * @author Eddú Meléndez
  * @see #setPort(int)
  * @see #setConfigurations(Collection)
  * @see JettyEmbeddedServletContainer
@@ -138,14 +145,7 @@ public class JettyEmbeddedServletContainerFactory
 		int port = (getPort() >= 0 ? getPort() : 0);
 		Server server = new Server(new InetSocketAddress(getAddress(), port));
 		configureWebAppContext(context, initializers);
-		if (getCompression() != null && getCompression().getEnabled()) {
-			HandlerWrapper gzipHandler = createGzipHandler();
-			gzipHandler.setHandler(context);
-			server.setHandler(gzipHandler);
-		}
-		else {
-			server.setHandler(context);
-		}
+		server.setHandler(addHandlerWrappers(context));
 		this.logger.info("Server initialized with port: " + port);
 		if (getSsl() != null && getSsl().isEnabled()) {
 			SslContextFactory sslContextFactory = new SslContextFactory();
@@ -161,6 +161,21 @@ public class JettyEmbeddedServletContainerFactory
 			new ForwardHeadersCustomizer().customize(server);
 		}
 		return getJettyEmbeddedServletContainer(server);
+	}
+
+	private Handler addHandlerWrappers(Handler handler) {
+		if (getCompression() != null && getCompression().getEnabled()) {
+			handler = applyWrapper(handler, createGzipHandler());
+		}
+		if (StringUtils.hasText(getServerHeader())) {
+			handler = applyWrapper(handler, new ServerHeaderHandler(getServerHeader()));
+		}
+		return handler;
+	}
+
+	private Handler applyWrapper(Handler handler, HandlerWrapper wrapper) {
+		wrapper.setHandler(handler);
+		return wrapper;
 	}
 
 	private HandlerWrapper createGzipHandler() {
@@ -199,6 +214,9 @@ public class JettyEmbeddedServletContainerFactory
 		configureSslKeyStore(factory, ssl);
 		if (ssl.getCiphers() != null) {
 			factory.setIncludeCipherSuites(ssl.getCiphers());
+		}
+		if (ssl.getEnabledProtocols() != null) {
+			factory.setIncludeProtocols(ssl.getEnabledProtocols());
 		}
 		configureSslTrustStore(factory, ssl);
 	}
@@ -646,8 +664,7 @@ public class JettyEmbeddedServletContainerFactory
 		public HandlerWrapper createGzipHandler(Compression compression) {
 			GzipHandler gzipHandler = new GzipHandler();
 			gzipHandler.setMinGzipSize(compression.getMinResponseSize());
-			gzipHandler.setMimeTypes(
-					new HashSet<String>(Arrays.asList(compression.getMimeTypes())));
+			gzipHandler.addIncludedMimeTypes(compression.getMimeTypes());
 			if (compression.getExcludedUserAgents() != null) {
 				gzipHandler.setExcluded(new HashSet<String>(
 						Arrays.asList(compression.getExcludedUserAgents())));
@@ -705,6 +722,30 @@ public class JettyEmbeddedServletContainerFactory
 					}
 				}
 			}
+		}
+
+	}
+
+	/**
+	 * {@link HandlerWrapper} to add a custom {@code server} header.
+	 */
+	private static class ServerHeaderHandler extends HandlerWrapper {
+
+		private static final String SERVER_HEADER = "server";
+
+		private final String value;
+
+		ServerHeaderHandler(String value) {
+			this.value = value;
+		}
+
+		@Override
+		public void handle(String target, Request baseRequest, HttpServletRequest request,
+				HttpServletResponse response) throws IOException, ServletException {
+			if (!response.getHeaderNames().contains(SERVER_HEADER)) {
+				response.setHeader(SERVER_HEADER, this.value);
+			}
+			super.handle(target, baseRequest, request, response);
 		}
 
 	}

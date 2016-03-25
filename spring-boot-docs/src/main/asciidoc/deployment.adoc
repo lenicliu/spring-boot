@@ -22,7 +22,7 @@ _cloud's_ notion of a running process.
 
 Two popular cloud providers, Heroku and Cloud Foundry, employ a "`buildpack`" approach.
 The buildpack wraps your deployed code in whatever is needed to _start_ your
-application: it might be a JDK and a call to `java`, it might be an embedded webserver,
+application: it might be a JDK and a call to `java`, it might be an embedded web server,
 or it might be a full-fledged application server. A buildpack is pluggable, but ideally
 you should be able to get by with as few customizations to it as possible.
 This reduces the footprint of functionality that is not under your control. It minimizes
@@ -232,11 +232,11 @@ Your application should now be up and running on Heroku.
 
 
 [[cloud-deployment-openshift]]
-=== Openshift
-https://www.openshift.com/[Openshift] is the RedHat public (and enterprise) PaaS solution.
+=== OpenShift
+https://www.openshift.com/[OpenShift] is the RedHat public (and enterprise) PaaS solution.
 Like Heroku, it works by running scripts triggered by git commits, so you can script
 the launching of a Spring Boot application in pretty much any way you like as long as the
-Java runtime is available (which is a standard feature you can ask for at Openshift).
+Java runtime is available (which is a standard feature you can ask for at OpenShift).
 To do this you can use the
 https://www.openshift.com/developers/do-it-yourself[DIY Cartridge] and hooks in your
 repository under `.openshift/action_scripts`:
@@ -289,7 +289,7 @@ in your `application.properties`, e.g.
 ----
 
 There's a blog on https://www.openshift.com/blogs/run-gradle-builds-on-openshift[running
-Gradle in Openshift] on their website that will get you started with a gradle build to
+Gradle in OpenShift] on their website that will get you started with a gradle build to
 run the app.
 
 
@@ -299,7 +299,7 @@ run the app.
 https://boxfuse.com/[Boxfuse] works by turning your Spring Boot executable jar or war
 into a minimal VM image that can be deployed unchanged either on VirtualBox or on AWS.
 Boxfuse comes with deep integration for Spring Boot and will use the information from your
-Spring Boot configuration file to automatically configure ports and healthcheck URLs.
+Spring Boot configuration file to automatically configure ports and health check URLs.
 Boxfuse leverages this information both for the images it produces as well as for all the
 resources it provisions (instances, security groups, elastic load balancers, etc).
 
@@ -323,7 +323,7 @@ https://boxfuse.com/docs/payloads/springboot.html#configuration
 [`application-boxfuse.properties`]
 file, Boxfuse will base its configuration based on the properties it contains.
 
-At this point `boxfuse` will start create an image for your application, upload it,
+At this point `boxfuse` will create an image for your application, upload it,
 and then configure and start the necessary resources on AWS:
 
 [indent=0,subs="verbatim,quotes,attributes"]
@@ -350,7 +350,7 @@ and then configure and start the necessary resources on AWS:
 Your application should now be up and running on AWS.
 
 There's a blog on https://boxfuse.com/blog/spring-boot-ec2.html[deploying Spring Boot apps
-on EC2] as well as well as https://boxfuse.com/docs/payloads/springboot.html[documentation
+on EC2] as well as https://boxfuse.com/docs/payloads/springboot.html[documentation
 for the Boxfuse Spring Boot integration] on their website that will get you started with a
 Maven build to run the app.
 
@@ -401,6 +401,9 @@ NOTE: Fully executable jars work by embedding an extra script at the front of th
 Not all tools currently accept this format so you may not always be able to use this
 technique.
 
+NOTE: When a fully executable jar is run, it uses the jar's directory as the working
+directory.
+
 
 
 [[deployment-service]]
@@ -416,7 +419,7 @@ The default executable script that can be embedded into Spring Boot jars will ac
 `restart` and `status` commands can be used. The script supports the following features:
 
 * Starts the services as the user that owns the jar file
-* Tracks application PIDs using `/var/run/<appname>/<appname>.pid`
+* Tracks application's PID using `/var/run/<appname>/<appname>.pid`
 * Writes console logs to `/var/log/<appname>.log`
 
 Assuming that you have a Spring Boot application installed in `/var/myapp`, to install a
@@ -427,9 +430,6 @@ Spring Boot application as an `init.d` service simply create a symlink:
 	$ sudo ln -s /var/myapp/myapp.jar /etc/init.d/myapp
 ----
 
-TIP: It is advisable to create a specific user account to run you application. Ensure
-that you have set the owner of the jar file using `chown` before installing your service.
-
 Once installed, you can start and stop the service in the usual way. You can also flag the
 application to start automatically using your standard operating system tools. For example,
 if you use Debian:
@@ -439,16 +439,76 @@ if you use Debian:
 	$ update-rc.d myapp defaults <priority>
 ----
 
+[[deployment-initd-service-securing]]
+===== Securing an init.d service
+
+NOTE: The following is a set of guidelines on how to secure a Spring Boot application
+that's being run as an init.d service. It is not intended to be an exhaustive list of
+everything that should be done to harden an application and the environment in which it
+runs.
+
+When executed as root, as is the case when root is being used to start an init.d service,
+the default executable script will run the application as the user which owns the jar
+file. You should never run a Spring Boot application as `root` so your application's jar
+file should never be owned by root. Instead, create a specific user to run your
+application and use `chown` to make it the owner of the jar file. For example:
+
+[indent=0,subs="verbatim,quotes,attributes"]
+----
+	$ chown bootapp:bootapp your-app.jar
+----
+
+In this case, the default executable script will run the application as the `bootapp`
+user.
+
+TIP: To reduce the chances of the application's user account being compromised, you should
+consider preventing it from using a login shell. Set the account's shell to
+`/usr/sbin/nologin`, for example.
+
+You should also take steps to prevent the modification of your application's jar file.
+Firstly, configure its permissions so that it cannot be written and can only be read or
+executed by its owner:
+
+[indent=0,subs="verbatim,quotes,attributes"]
+----
+	$ chmod 500 your-app.jar
+----
+
+Secondly, you should also take steps to limit the damage if your application or the
+account that's running it is compromised. If an attacker does gain access, they could make
+the jar file writable and change its contents. One way to protect against this is to make
+it immutable using `chattr`:
+
+[indent=0,subs="verbatim,quotes,attributes"]
+----
+	$ sudo chattr +i your-app.jar
+----
+
+This will prevent any user, including root, from modifying the jar.
+
+If root is used to control the application's service and you
+<<deployment-script-customization-conf-file, use a `.conf` file>> to customize its
+startup, the `.conf` file will be read and evaluated by the root user. It should be
+secured accordingly. Use `chmod` so that the file can only be read by the owner and use
+`chown` to make root the owner:
+
+[indent=0,subs="verbatim,quotes,attributes"]
+----
+	$ chmod 400 your-app.conf
+	$ sudo chown root:root your-app.conf
+----
+
 
 
 [[deployment-systemd-service]]
 ==== Installation as a systemd service
-Systemd is the successor to `init.d` scripts, and now being used by many many modern Linux
-distributions. Although you can continue to use `init.d` script with `systemd`, it is also
-possible to launch Spring Boot applications using `systemd` '`service`' scripts.
+Systemd is the successor of the System V init system, and is now being used by many modern
+Linux distributions. Although you can continue to use `init.d` scripts with `systemd`, it
+is also possible to launch Spring Boot applications using `systemd` '`service`' scripts.
 
-For example, to run a Spring Boot application installed in `var/myapp` as user `myapp` you
-can add the following script in `/etc/systemd/system/myapp.service`:
+Assuming that you have a Spring Boot application installed in `/var/myapp`, to install a
+Spring Boot application as a `systemd` service create a script named `myapp.service` using
+the following example and place it in `/etc/systemd/system` directory:
 
 [indent=0]
 ----
@@ -465,7 +525,23 @@ can add the following script in `/etc/systemd/system/myapp.service`:
 	WantedBy=multi-user.target
 ----
 
-TIP: Remember to change the `Description` and `ExecStart` fields for your application.
+TIP: Remember to change the `Description`, `User` and `ExecStart` fields for your
+application.
+
+Note that unlike when running as an `init.d` service, user that runs the application, PID
+file and console log file behave differently under `systemd` and must be configured using
+appropriate fields in '`service`' script. Consult the
+http://www.freedesktop.org/software/systemd/man/systemd.service.html[service unit
+configuration man page] for more details.
+
+To flag the application to start automatically on system boot use the following command:
+
+[indent=0,subs="verbatim,quotes,attributes"]
+----
+	$ systemctl enable myapp.service
+----
+
+Refer to `man systemctl` for more details.
 
 
 
@@ -485,11 +561,18 @@ the default behavior in a script or on the command line:
  that the `stop\|start\|status\|restart` commands work, or to `run` if you just want to
  run the script in the foreground.
 
+|`USE_START_STOP_DAEMON`
+|If the `start-stop-daemon` command, when it's available, should be used to control the
+ process. Defaults to `true`.
+
 |`PID_FOLDER`
 |The root name of the pid folder (`/var/run` by default).
 
 |`LOG_FOLDER`
 |The name of the folder to put log files in (`/var/log` by default).
+
+|`CONF_FOLDER`
+|The name of the folder to read .conf files from (same folder as jar-file by default).
 
 |`LOG_FILENAME`
 |The name of the log file in the `LOG_FOLDER` (`<appname>.log` by default).
@@ -536,7 +619,7 @@ the `embeddedLaunchScriptProperties` option of the Spring Boot Maven or Gradle p
 
 |`initInfoProvides`
 |The `Provides` section of "`INIT INFO`". Defaults to `spring-boot-application` for Gradle
-and to `${project.artifactId}` for Maven.
+ and to `${project.artifactId}` for Maven.
 
 |`initInfoShortDescription`
 |The `Short-Description` section of "`INIT INFO`". Defaults to `Spring Boot Application`
@@ -544,8 +627,22 @@ for Gradle and to `${project.name}` for Maven.
 
 |`initInfoDescription`
 |The `Description` section of "`INIT INFO`". Defaults to `Spring Boot Application` for
-Gradle and to `${project.description}` (falling back to `${project.name}`) for Maven.
+ Gradle and to `${project.description}` (falling back to `${project.name}`) for Maven.
+
+|`initInfoChkconfig`
+|The `chkconfig` section of "`INIT INFO`". Defaults to `2345 99 01`.
+
+|`logFolder`
+|The default value for `LOG_FOLDER`. Only valid for an `init.d` service.
+
+|`pidFolder`
+|The default value for `PID_FOLDER`. Only valid for an `init.d` service.
+
+|`useStartStopDaemon`
+|If the `start-stop-daemon` command, when it's available, should be used to control the
+ process. Defaults to `true`.
 |===
+
 
 
 [[deployment-script-customization-conf-file]]
@@ -560,9 +657,13 @@ a `.conf` file,
 	LOG_FOLDER=/custom/log/folder
 ----
 
-The file should be situated next to the jar file and have the same name but suffixed with
+The file is expected next to the jar file and have the same name but suffixed with
 `.conf` rather than `.jar`. For example, a jar named `/var/myapp/myapp.jar` will use the
-configuration file named `/var/myapp/myapp.conf` if it exists.
+configuration file named `/var/myapp/myapp.conf` if it exists. You can also use the
+`CONF_FOLDER` property to customize the location of that file.
+
+To learn about securing this file appropriately, please refer to
+<<deployment-initd-service-securing,the guidelines for securing an init.d service>>.
 
 
 
@@ -572,16 +673,15 @@ Spring Boot application can be started as Windows service using
 https://github.com/kohsuke/winsw[`winsw`].
 
 A sample https://github.com/snicoll-scratches/spring-boot-daemon[maintained separately]
-to the core of Spring Boot describes steps by steps how you can create a Windows service for
+to the core of Spring Boot describes step-by-step how you can create a Windows service for
 your Spring Boot application.
-
 
 
 
 [[deployment-whats-next]]
 == What to read next
 Check out the http://www.cloudfoundry.com/[Cloud Foundry],
-https://www.heroku.com/[Heroku], https://www.openshift.com[Openshift] and
+https://www.heroku.com/[Heroku], https://www.openshift.com[OpenShift] and
 https://boxfuse.com[Boxfuse] web sites for more information about the kinds of features
 that a PaaS can offer. These are just four of the most popular Java PaaS providers, since
 Spring Boot is so amenable to cloud-based deployment you're free to consider other

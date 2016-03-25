@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2015 the original author or authors.
+ * Copyright 2012-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,6 @@ import javax.sql.DataSource;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionOutcome;
@@ -78,15 +77,19 @@ public class HibernateJpaAutoConfiguration extends JpaBaseConfiguration {
 	 * {@code WebSphereExtendedJtaPlatform} implementations for various Hibernate
 	 * versions.
 	 */
-	private static final String[] WEBSHERE_JTA_PLATFORM_CLASSES = {
+	private static final String[] WEBSPHERE_JTA_PLATFORM_CLASSES = {
 			"org.hibernate.engine.transaction.jta.platform.internal.WebSphereExtendedJtaPlatform",
 			"org.hibernate.service.jta.platform.internal.WebSphereExtendedJtaPlatform", };
 
-	@Autowired
-	private JpaProperties properties;
+	private final JpaProperties properties;
 
-	@Autowired
-	private DataSource dataSource;
+	private final DataSource dataSource;
+
+	public HibernateJpaAutoConfiguration(JpaProperties properties,
+			DataSource dataSource) {
+		this.properties = properties;
+		this.dataSource = dataSource;
+	}
 
 	@Override
 	protected AbstractJpaVendorAdapter createJpaVendorAdapter() {
@@ -114,7 +117,7 @@ public class HibernateJpaAutoConfiguration extends JpaBaseConfiguration {
 		if (jtaTransactionManager != null) {
 			if (runningOnWebSphere()) {
 				// We can never use SpringJtaPlatform on WebSphere as
-				// WebSphereUowTransactionManger has a null TransactionManager
+				// WebSphereUowTransactionManager has a null TransactionManager
 				// which will cause Hibernate to NPE
 				configureWebSphereTransactionPlatform(vendorProperties);
 			}
@@ -139,7 +142,7 @@ public class HibernateJpaAutoConfiguration extends JpaBaseConfiguration {
 	}
 
 	private Object getWebSphereJtaPlatformManager() {
-		return getJtaPlatformManager(WEBSHERE_JTA_PLATFORM_CLASSES);
+		return getJtaPlatformManager(WEBSPHERE_JTA_PLATFORM_CLASSES);
 	}
 
 	private void configureSpringJtaPlatform(Map<String, Object> vendorProperties,

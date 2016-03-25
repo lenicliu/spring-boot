@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2015 the original author or authors.
+ * Copyright 2012-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,12 +20,11 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import org.springframework.boot.test.IntegrationTest;
-import org.springframework.boot.test.OutputCapture;
-import org.springframework.boot.test.SpringApplicationConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.boot.test.context.IntegrationTest;
+import org.springframework.boot.test.rule.OutputCapture;
+import org.springframework.test.context.junit4.SpringRunner;
 
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Tests for {@link SampleMongoApplication}.
@@ -33,8 +32,7 @@ import static org.junit.Assert.assertTrue;
  * @author Dave Syer
  * @author Andy Wilkinson
  */
-@RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(SampleMongoApplication.class)
+@RunWith(SpringRunner.class)
 @IntegrationTest
 public class SampleMongoApplicationTests {
 
@@ -44,8 +42,7 @@ public class SampleMongoApplicationTests {
 	@Test
 	public void testDefaultSettings() throws Exception {
 		String output = SampleMongoApplicationTests.outputCapture.toString();
-		assertTrue("Wrong output: " + output,
-				output.contains("firstName='Alice', lastName='Smith'"));
+		assertThat(output).contains("firstName='Alice', lastName='Smith'");
 	}
 
 }

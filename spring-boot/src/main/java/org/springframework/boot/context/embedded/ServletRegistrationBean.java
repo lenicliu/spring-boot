@@ -52,7 +52,7 @@ import org.springframework.util.ObjectUtils;
  */
 public class ServletRegistrationBean extends RegistrationBean {
 
-	private static Log logger = LogFactory.getLog(ServletRegistrationBean.class);
+	private static final Log logger = LogFactory.getLog(ServletRegistrationBean.class);
 
 	private static final String[] DEFAULT_MAPPINGS = { "/*" };
 
@@ -100,7 +100,7 @@ public class ServletRegistrationBean extends RegistrationBean {
 
 	/**
 	 * Returns the servlet being registered.
-	 * @return the sevlet
+	 * @return the servlet
 	 */
 	protected Servlet getServlet() {
 		return this.servlet;

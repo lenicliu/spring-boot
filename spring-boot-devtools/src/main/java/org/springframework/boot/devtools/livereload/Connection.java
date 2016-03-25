@@ -38,7 +38,7 @@ import org.springframework.util.Base64Utils;
  */
 class Connection {
 
-	private static Log logger = LogFactory.getLog(Connection.class);
+	private static final Log logger = LogFactory.getLog(Connection.class);
 
 	private static final Pattern WEBSOCKET_KEY_PATTERN = Pattern
 			.compile("^Sec-WebSocket-Key:(.*)$", Pattern.MULTILINE);
@@ -113,7 +113,7 @@ class Connection {
 				throw new ConnectionClosedException();
 			}
 			else if (frame.getType() == Frame.Type.TEXT) {
-				logger.debug("Recieved LiveReload text frame " + frame);
+				logger.debug("Received LiveReload text frame " + frame);
 			}
 			else {
 				throw new IOException("Unexpected Frame Type " + frame.getType());

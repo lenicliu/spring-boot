@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2015 the original author or authors.
+ * Copyright 2012-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -74,11 +74,15 @@ public class RemoteDevToolsAutoConfiguration {
 	private static final Log logger = LogFactory
 			.getLog(RemoteDevToolsAutoConfiguration.class);
 
-	@Autowired
-	private DevToolsProperties properties;
+	private final DevToolsProperties properties;
 
-	@Autowired
-	private ServerProperties serverProperties;
+	private final ServerProperties serverProperties;
+
+	public RemoteDevToolsAutoConfiguration(DevToolsProperties properties,
+			ServerProperties serverProperties) {
+		this.properties = properties;
+		this.serverProperties = serverProperties;
+	}
 
 	@Bean
 	@ConditionalOnMissingBean
@@ -130,8 +134,8 @@ public class RemoteDevToolsAutoConfiguration {
 		}
 
 		@Bean
-		@ConditionalOnMissingBean(name = "remoteRestartHanderMapper")
-		public UrlHandlerMapper remoteRestartHanderMapper(HttpRestartServer server) {
+		@ConditionalOnMissingBean(name = "remoteRestartHandlerMapper")
+		public UrlHandlerMapper remoteRestartHandlerMapper(HttpRestartServer server) {
 			String url = (this.serverProperties.getContextPath() == null ? ""
 					: this.serverProperties.getContextPath())
 					+ this.properties.getRemote().getContextPath() + "/restart";
@@ -155,8 +159,8 @@ public class RemoteDevToolsAutoConfiguration {
 		private ServerProperties serverProperties;
 
 		@Bean
-		@ConditionalOnMissingBean(name = "remoteDebugHanderMapper")
-		public UrlHandlerMapper remoteDebugHanderMapper(
+		@ConditionalOnMissingBean(name = "remoteDebugHandlerMapper")
+		public UrlHandlerMapper remoteDebugHandlerMapper(
 				@Qualifier("remoteDebugHttpTunnelServer") HttpTunnelServer server) {
 			String url = (this.serverProperties.getContextPath() == null ? ""
 					: this.serverProperties.getContextPath())

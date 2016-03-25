@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2015 the original author or authors.
+ * Copyright 2012-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,11 +34,12 @@ import org.springframework.boot.actuate.metrics.Metric;
 import org.springframework.boot.autoconfigure.jackson.JacksonAutoConfiguration;
 import org.springframework.boot.autoconfigure.web.HttpMessageConvertersAutoConfiguration;
 import org.springframework.boot.autoconfigure.web.WebMvcAutoConfiguration;
-import org.springframework.boot.test.SpringApplicationConfiguration;
+import org.springframework.boot.test.context.SpringApplicationConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.context.web.WebAppConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -56,7 +57,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * @author Andy Wilkinson
  * @author Sergei Egorov
  */
-@RunWith(SpringJUnit4ClassRunner.class)
+@RunWith(SpringRunner.class)
+@DirtiesContext
 @SpringApplicationConfiguration(TestConfiguration.class)
 @WebAppConfiguration
 public class MetricsMvcEndpointTests {
@@ -126,7 +128,6 @@ public class MetricsMvcEndpointTests {
 	public void specificMetricWithDot() throws Exception {
 		this.mvc.perform(get("/metrics/group2.a")).andExpect(status().isOk())
 				.andExpect(content().string(containsString("1")));
-
 	}
 
 	@Import({ JacksonAutoConfiguration.class,
@@ -148,6 +149,7 @@ public class MetricsMvcEndpointTests {
 					metrics.add(new Metric<Integer>("group1.b", 1));
 					metrics.add(new Metric<Integer>("group2.a", 1));
 					metrics.add(new Metric<Integer>("group2_a", 1));
+					metrics.add(new Metric<Integer>("baz", null));
 					return Collections.unmodifiableList(metrics);
 				}
 

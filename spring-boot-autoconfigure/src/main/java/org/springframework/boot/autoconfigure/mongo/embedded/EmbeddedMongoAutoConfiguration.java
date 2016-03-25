@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2015 the original author or authors.
+ * Copyright 2012-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@
 package org.springframework.boot.autoconfigure.mongo.embedded;
 
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -45,7 +47,6 @@ import de.flapdoodle.embed.process.store.ArtifactStoreBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -76,37 +77,26 @@ import org.springframework.util.Assert;
 @ConditionalOnClass({ Mongo.class, MongodStarter.class })
 public class EmbeddedMongoAutoConfiguration {
 
-	@Autowired
-	private MongoProperties properties;
+	private static final byte[] IP4_LOOPBACK_ADDRESS = { 127, 0, 0, 1 };
 
-	@Autowired
-	private EmbeddedMongoProperties embeddedProperties;
+	private static final byte[] IP6_LOOPBACK_ADDRESS = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 1 };
 
-	@Autowired
-	private ApplicationContext context;
+	private final MongoProperties properties;
 
-	@Autowired(required = false)
-	private IRuntimeConfig runtimeConfig;
+	private final EmbeddedMongoProperties embeddedProperties;
 
-	@Bean
-	@ConditionalOnMissingBean
-	@ConditionalOnClass(Logger.class)
-	public IRuntimeConfig embeddedMongoRuntimeConfig() {
-		Logger logger = LoggerFactory
-				.getLogger(getClass().getPackage().getName() + ".EmbeddedMongo");
-		ProcessOutput processOutput = new ProcessOutput(
-				Processors.logTo(logger, Slf4jLevel.INFO),
-				Processors.logTo(logger, Slf4jLevel.ERROR), Processors.named("[console>]",
-						Processors.logTo(logger, Slf4jLevel.DEBUG)));
-		return new RuntimeConfigBuilder().defaultsWithLogger(Command.MongoD, logger)
-				.processOutput(processOutput).artifactStore(getArtifactStore(logger))
-				.build();
-	}
+	private final ApplicationContext context;
 
-	private ArtifactStoreBuilder getArtifactStore(Logger logger) {
-		return new ExtractedArtifactStoreBuilder().defaults(Command.MongoD)
-				.download(new DownloadConfigBuilder().defaultsForCommand(Command.MongoD)
-						.progressListener(new Slf4jProgressListener(logger)));
+	private final IRuntimeConfig runtimeConfig;
+
+	public EmbeddedMongoAutoConfiguration(MongoProperties properties,
+			EmbeddedMongoProperties embeddedProperties, ApplicationContext context,
+			IRuntimeConfig runtimeConfig) {
+		this.properties = properties;
+		this.embeddedProperties = embeddedProperties;
+		this.context = context;
+		this.runtimeConfig = runtimeConfig;
 	}
 
 	@Bean(initMethod = "start", destroyMethod = "stop")
@@ -136,7 +126,12 @@ public class EmbeddedMongoAutoConfiguration {
 		MongodConfigBuilder builder = new MongodConfigBuilder()
 				.version(featureAwareVersion);
 		if (getPort() > 0) {
-			builder.net(new Net(getPort(), Network.localhostIsIPv6()));
+			builder.net(new Net(getHost().getHostAddress(), getPort(),
+					Network.localhostIsIPv6()));
+		}
+		else {
+			builder.net(new Net(getHost().getHostAddress(),
+					Network.getFreeServerPort(getHost()), Network.localhostIsIPv6()));
 		}
 		return builder.build();
 	}
@@ -146,6 +141,14 @@ public class EmbeddedMongoAutoConfiguration {
 			return MongoProperties.DEFAULT_PORT;
 		}
 		return this.properties.getPort();
+	}
+
+	private InetAddress getHost() throws UnknownHostException {
+		if (this.properties.getHost() == null) {
+			return InetAddress.getByAddress(Network.localhostIsIPv6()
+					? IP6_LOOPBACK_ADDRESS : IP4_LOOPBACK_ADDRESS);
+		}
+		return InetAddress.getByName(this.properties.getHost());
 	}
 
 	private void publishPortInfo(int port) {
@@ -172,6 +175,33 @@ public class EmbeddedMongoAutoConfiguration {
 			sources.addFirst(propertySource);
 		}
 		return (Map<String, Object>) propertySource.getSource();
+	}
+
+	@Configuration
+	@ConditionalOnClass(Logger.class)
+	@ConditionalOnMissingBean(IRuntimeConfig.class)
+	static class RuntimeConfigConfiguration {
+
+		@Bean
+		public IRuntimeConfig embeddedMongoRuntimeConfig() {
+			Logger logger = LoggerFactory
+					.getLogger(getClass().getPackage().getName() + ".EmbeddedMongo");
+			ProcessOutput processOutput = new ProcessOutput(
+					Processors.logTo(logger, Slf4jLevel.INFO),
+					Processors.logTo(logger, Slf4jLevel.ERROR), Processors.named(
+							"[console>]", Processors.logTo(logger, Slf4jLevel.DEBUG)));
+			return new RuntimeConfigBuilder().defaultsWithLogger(Command.MongoD, logger)
+					.processOutput(processOutput).artifactStore(getArtifactStore(logger))
+					.build();
+		}
+
+		private ArtifactStoreBuilder getArtifactStore(Logger logger) {
+			return new ExtractedArtifactStoreBuilder().defaults(Command.MongoD)
+					.download(new DownloadConfigBuilder()
+							.defaultsForCommand(Command.MongoD)
+							.progressListener(new Slf4jProgressListener(logger)).build());
+		}
+
 	}
 
 	/**
